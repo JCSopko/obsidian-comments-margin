@@ -58,15 +58,17 @@ export default class CommentsPlusPlus extends Plugin {
                         editorCallback: async (editor, ctx) => await addCommentCommand(this, ctx.file, editor),
                 });
 
-                if (!this.settings.defaultName && !isRelayInstalled(this.app)) {
-                        const name = await promptForDefaultName(this.app);
-                        if (!name || !name.text) return;
-
-                        this.settings.defaultName = name.text;
-                        await this.saveSettings();
-                }
-
                 this.addSettingTab(new CommentsPPSettingTab(this.app, this));
+
+                this.app.workspace.onLayoutReady(() => {
+                        if (!this.settings.defaultName && !isRelayInstalled(this.app)) {
+                                promptForDefaultName(this.app).then(async (name) => {
+                                        if (!name || !name.text) return;
+                                        this.settings.defaultName = name.text;
+                                        await this.saveSettings();
+                                });
+                        }
+                });
         }
 
         getName(): string {

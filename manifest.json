@@ -1,9 +1,9 @@
 {
 	"id": "comments-plus-plus",
-	"name": "Comments++",
-	"version": "1.0.1",
+	"name": "Comments++ (Margin)",
+	"version": "1.1.0-fork",
 	"minAppVersion": "0.15.0",
-	"description": "Add comments to your notes. Inspired by Google Docs comments.",
-	"author": "Benjas333",
+	"description": "Comments with margin-column rendering. Fork of Benjas333/obsidian-comments-plus-plus.",
+	"author": "JCSopko",
 	"isDesktopOnly": false
 }
