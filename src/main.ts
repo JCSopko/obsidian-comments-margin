@@ -8,6 +8,7 @@ import { DateTime } from "luxon";
 import { CommentsNotice, generateCommentId, hideChildren, toggleChildren } from "utils/helpers";
 import { addCommentCommand } from "commands/addCommand";
 import { getRelayUsername, isRelayInstalled } from "integrations/relay";
+import { createMarginCommentExtension } from "editor/marginPlugin";
 
 export default class CommentsPlusPlus extends Plugin {
         settings: CommentsPPSettings;
@@ -20,6 +21,7 @@ export default class CommentsPlusPlus extends Plugin {
         async onload() {
                 await this.loadSettings();
 
+                this.registerEditorExtension(createMarginCommentExtension(this));
                 this.registerMarkdownPostProcessor(this.postProcessor.bind(this));
 
                 this.addRibbonIcon(ICON_NAME, PLUGIN_NAME, () => this.activateView());

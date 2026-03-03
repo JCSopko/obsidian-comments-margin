@@ -241,3 +241,135 @@ h2.comments-title {
                 resize: vertical;
         }
 }
+
+/* ==============================
+   Margin Column Rendering
+   ============================== */
+
+/* The margin column — flex sibling of .cm-content inside .cm-scroller */
+.comment-margin-column {
+        width: 280px;
+        flex-shrink: 0;
+        position: relative;
+        pointer-events: auto;
+        padding: 0 8px;
+        box-sizing: border-box;
+}
+
+/* Individual comment cards */
+.margin-comment-card {
+        position: absolute;
+        width: 260px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--background-modifier-border);
+        background-color: var(--background-secondary);
+        font-size: 0.85em;
+        box-shadow: var(--shadow-s);
+}
+
+.margin-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 4px;
+        gap: 8px;
+}
+
+.margin-card-name {
+        font-weight: 600;
+        font-size: 0.9em;
+}
+
+.margin-card-date {
+        font-size: 0.75em;
+        color: var(--text-muted);
+        white-space: nowrap;
+}
+
+.margin-card-content {
+        margin: 0;
+        line-height: 1.4;
+        color: var(--text-normal);
+}
+
+/* Hover linking: fallback for lines without ==marks== — subtle left border accent */
+.comment-line-highlight {
+        border-left: 3px solid var(--text-accent) !important;
+        padding-left: 4px !important;
+        transition: border-color 150ms ease;
+}
+
+/* Hover linking: highlight ==marked text== when hovering its comment card */
+mark.comment-mark-highlight {
+        outline: 2px solid var(--text-accent);
+        outline-offset: 1px;
+        border-radius: 2px;
+        transition: outline-color 150ms ease;
+}
+
+/* Hover linking: active/emphasized margin card */
+.margin-comment-card.margin-card-active {
+        border-color: var(--text-accent);
+        box-shadow: 0 0 0 1px var(--text-accent), var(--shadow-s);
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+/* Hide inline comment callouts when margin column is active.
+   Use .comment-block class (added by postProcessor) — avoids :has() compat issues. */
+.has-margin-comments .cm-embed-block.cm-callout.comment-block {
+        display: none !important;
+}
+
+/* Cursor style for margin cards (they have a context menu) */
+.margin-comment-card {
+        cursor: default;
+}
+
+/* --- Sub-comment / reply styles --- */
+.margin-card-replies-toggle {
+        margin-top: 6px;
+        font-size: 0.8em;
+        color: var(--text-accent);
+        cursor: pointer;
+        user-select: none;
+}
+
+.margin-card-replies-toggle::before {
+        content: "\25B6\00a0";  /* ▶ */
+        font-size: 0.7em;
+        display: inline-block;
+        transition: transform 150ms ease;
+}
+
+.margin-card-replies-toggle.expanded::before {
+        transform: rotate(90deg);
+}
+
+.margin-card-replies {
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px solid var(--background-modifier-border);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+}
+
+.margin-card-reply {
+        padding-left: 8px;
+        padding-bottom: 6px;
+        border-left: 2px solid var(--background-modifier-border);
+}
+
+.margin-card-reply + .margin-card-reply {
+        padding-top: 6px;
+        border-top: 1px solid var(--background-modifier-border);
+}
+
+.margin-card-reply-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 2px;
+        gap: 6px;
+}
