@@ -326,6 +326,30 @@ mark.comment-mark-highlight {
         cursor: default;
 }
 
+/* Resolve button (checkmark) in margin card header */
+.margin-card-resolve {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        font-size: 1.1em;
+        line-height: 1;
+        padding: 0 2px;
+        border-radius: 4px;
+        opacity: 0;
+        transition: opacity 150ms ease, color 150ms ease, background-color 150ms ease;
+        flex-shrink: 0;
+}
+
+.margin-comment-card:hover .margin-card-resolve {
+        opacity: 1;
+}
+
+.margin-card-resolve:hover {
+        color: var(--text-accent);
+        background-color: var(--background-modifier-hover);
+}
+
 /* --- Sub-comment / reply styles --- */
 .margin-card-replies-toggle {
         margin-top: 6px;

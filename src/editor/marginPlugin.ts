@@ -18,26 +18,36 @@ interface ParsedComment {
 	from: number;
 	to: number;
 	children: ParsedSubComment[];
+	resolved: boolean;
 }
 
-function parseMetadata(raw: string): { name: string; timestamp: DateTime | undefined; id: string | undefined } {
+function parseMetadata(raw: string): { name: string; timestamp: DateTime | undefined; id: string | undefined; resolved: boolean } {
 	let name = raw.trim();
 	let timestamp: DateTime | undefined;
 	let id: string | undefined;
+	let resolved = false;
 
 	const sepIdx = name.indexOf(METADATA_SEPARATOR);
 	if (sepIdx >= 0) {
 		let date = name.slice(sepIdx + METADATA_SEPARATOR.length).trim();
 		const idIdx = date.indexOf(METADATA_SEPARATOR);
 		if (idIdx >= 0) {
-			id = date.slice(idIdx + METADATA_SEPARATOR.length).trim();
+			let rest = date.slice(idIdx + METADATA_SEPARATOR.length).trim();
 			date = date.slice(0, idIdx).trim();
+			// Check for resolved flag after the ID
+			const resolvedIdx = rest.indexOf(METADATA_SEPARATOR);
+			if (resolvedIdx >= 0) {
+				const flag = rest.slice(resolvedIdx + METADATA_SEPARATOR.length).trim();
+				if (flag === "resolved") resolved = true;
+				rest = rest.slice(0, resolvedIdx).trim();
+			}
+			id = rest;
 		}
 		timestamp = DateTime.fromISO(date);
 		name = name.slice(0, sepIdx).trim();
 	}
 
-	return { name, timestamp, id };
+	return { name, timestamp, id, resolved };
 }
 
 function parseSubComments(strippedContent: string): { mainContent: string; children: ParsedSubComment[] } {
@@ -91,6 +101,7 @@ function parseCommentsFromDoc(docText: string): ParsedComment[] {
 			from: match.index,
 			to: match.index + match[0].length,
 			children,
+			resolved: meta.resolved,
 		});
 	}
 
@@ -219,6 +230,9 @@ class MarginCommentPlugin {
 			const pos = positions[i];
 			if (!pos) continue;
 
+			// Skip resolved comments — they stay hidden from the margin
+			if (comment.resolved) continue;
+
 			const key = comment.id || `idx-${i}`;
 			activeKeys.add(key);
 
@@ -288,6 +302,18 @@ class MarginCommentPlugin {
 		if (!file) return;
 
 		const menu = new Menu();
+
+		// Find the parsed comment for resolve context
+		const parsedComment = this.comments.find((c) => c.id === commentId);
+
+		menu.addItem((item) =>
+			item
+				.setTitle("Resolve")
+				.setIcon("check")
+				.onClick(async () => {
+					if (parsedComment) await this.resolveComment(parsedComment);
+				})
+		);
 
 		menu.addItem((item) =>
 			item
@@ -405,6 +431,30 @@ class MarginCommentPlugin {
 		}
 	}
 
+	/** Resolve a comment by appending `| resolved` to its callout header line */
+	private async resolveComment(comment: ParsedComment) {
+		if (!comment.id) return;
+
+		const file =
+			this.plugin.mdView?.file ??
+			this.plugin.app.workspace.getActiveViewOfType(MarkdownView)?.file;
+		if (!file) return;
+
+		await this.plugin.app.vault.process(file, (content) => {
+			// Find the callout header line containing this comment's ID
+			const lines = content.split("\n");
+			for (let i = 0; i < lines.length; i++) {
+				const line = lines[i]!;
+				if (line.includes("[!COMMENT++]") && line.includes(comment.id!)) {
+					// Append | resolved
+					lines[i] = line.trimEnd() + ` ${METADATA_SEPARATOR} resolved`;
+					break;
+				}
+			}
+			return lines.join("\n");
+		});
+	}
+
 	private populateCard(card: HTMLElement, comment: ParsedComment) {
 		card.textContent = "";
 
@@ -421,6 +471,19 @@ class MarginCommentPlugin {
 			dateEl.className = "margin-card-date";
 			dateEl.textContent = comment.timestamp.toLocaleString(DateTime.DATETIME_MED);
 			header.appendChild(dateEl);
+		}
+
+		// Resolve button (checkmark)
+		if (comment.id) {
+			const resolveBtn = document.createElement("button");
+			resolveBtn.className = "margin-card-resolve";
+			resolveBtn.setAttribute("aria-label", "Resolve comment");
+			resolveBtn.textContent = "\u2713"; // ✓
+			resolveBtn.addEventListener("click", (ev) => {
+				ev.stopPropagation();
+				this.resolveComment(comment);
+			});
+			header.appendChild(resolveBtn);
 		}
 
 		card.appendChild(header);
