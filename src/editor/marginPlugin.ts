@@ -154,6 +154,15 @@ class MarginCommentPlugin {
 		view.scrollDOM.appendChild(this.marginEl);
 		view.dom.classList.add("has-margin-comments");
 
+		// Margin-column background context menu — shows Expand all / Collapse all when
+		// right-clicking off any individual card. Per-card right-clicks already call
+		// stopPropagation so this listener is only reached for empty-area clicks.
+		this.marginEl.addEventListener("contextmenu", (ev) => {
+			ev.preventDefault();
+			ev.stopPropagation();
+			this.showMarginAreaContextMenu(ev);
+		});
+
 		this.comments = parseCommentsFromDoc(view.state.doc.toString());
 		this.scheduleLayout();
 
@@ -465,6 +474,8 @@ class MarginCommentPlugin {
 				})
 		);
 
+		this.addExpandCollapseAllItems(menu);
+
 		menu.addItem((item) =>
 			item
 				.setTitle("Remove entire thread")
@@ -477,6 +488,53 @@ class MarginCommentPlugin {
 		);
 
 		menu.showAtMouseEvent(ev);
+	}
+
+	/** Right-click on the margin column off any card — shows global Expand/Collapse all. */
+	private showMarginAreaContextMenu(ev: MouseEvent) {
+		// Only meaningful when there are cards to act on.
+		if (this.anchors.length === 0) return;
+
+		const menu = new Menu();
+		this.addExpandCollapseAllItems(menu);
+		menu.showAtMouseEvent(ev);
+	}
+
+	/** Append "Expand all" / "Collapse all" entries to a menu, with disabled-state when already in that state. */
+	private addExpandCollapseAllItems(menu: Menu) {
+		const allExpanded = !this.minimalMode && this.collapsedCards.size === 0;
+		const allCollapsed = this.minimalMode && this.expandedIcons.size === 0;
+
+		menu.addItem((item) =>
+			item
+				.setTitle("Expand all")
+				.setIcon("chevrons-down")
+				.setDisabled(allExpanded)
+				.onClick(() => this.applyExpandAll(true))
+		);
+		menu.addItem((item) =>
+			item
+				.setTitle("Collapse all")
+				.setIcon("chevrons-up")
+				.setDisabled(allCollapsed)
+				.onClick(() => this.applyExpandAll(false))
+		);
+	}
+
+	/** Force every card into the expanded or collapsed state and persist minimalMode. */
+	private async applyExpandAll(expanded: boolean) {
+		this.collapsedCards.clear();
+		this.expandedIcons.clear();
+		this.minimalMode = !expanded;
+		this.plugin.settings.minimalMode = this.minimalMode;
+		await this.plugin.saveSettings();
+
+		if (this.minimalToggleBtn) {
+			this.minimalToggleBtn.classList.toggle("active", this.minimalMode);
+			this.minimalToggleBtn.textContent = this.minimalMode ? "Expand all" : "Minimize";
+		}
+		this.dirty = true;
+		this.scheduleLayout();
 	}
 
 	/**

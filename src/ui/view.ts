@@ -709,6 +709,52 @@ export class CommentsPPView extends ItemView {
 		editor.scrollIntoView({ from: pos, to: pos }, true);
 	}
 
+	private showSidebarContextMenu(ev: MouseEvent) {
+		// Only meaningful in file mode — @Mentions has no parent/child collapse model.
+		if (this.mode !== "file") return;
+
+		const activeFile = this.app.workspace.getActiveFile();
+		if (!activeFile) return;
+
+		const comments = this.comments[activeFile.name] ?? [];
+		const hasNestable = comments.some((c) => c.children.length > 0);
+		if (!hasNestable) return;
+
+		const allCollapsed = comments.every((c) => c.children.length === 0 || c.childrenHiddenView);
+		const allExpanded = comments.every((c) => c.children.length === 0 || !c.childrenHiddenView);
+
+		const menu = new Menu();
+		menu.addItem((item) =>
+			item
+				.setTitle("Expand all")
+				.setIcon("chevrons-down")
+				.setDisabled(allExpanded)
+				.onClick(() => this.setAllExpanded(activeFile.name, true))
+		);
+		menu.addItem((item) =>
+			item
+				.setTitle("Collapse all")
+				.setIcon("chevrons-up")
+				.setDisabled(allCollapsed)
+				.onClick(() => this.setAllExpanded(activeFile.name, false))
+		);
+
+		menu.showAtMouseEvent(ev);
+	}
+
+	private setAllExpanded(fileName: string, expanded: boolean) {
+		const comments = this.comments[fileName] ?? [];
+		this.applyChildrenHiddenRecursive(comments, !expanded);
+		this.renderComments(fileName);
+	}
+
+	private applyChildrenHiddenRecursive(comments: CommentPP[], hidden: boolean) {
+		for (const c of comments) {
+			c.childrenHiddenView = hidden;
+			if (c.children.length > 0) this.applyChildrenHiddenRecursive(c.children, hidden);
+		}
+	}
+
 	private showCommentOptions(ev: MouseEvent, comment: CommentPP, child: boolean) {
 		const menu = new Menu();
 		let addTitle = "Add sub-comment";
@@ -875,6 +921,25 @@ export class CommentsPPView extends ItemView {
 		this.tabMentionsEl.onClickEvent(() => this.switchMode("mentions"));
 
 		this.commentsEl = commentContainer.createDiv();
+
+		// Sidebar background context menu — Expand all / Collapse all (file mode).
+		// Bails when the right-click landed on an actionable element so the
+		// per-item handler (showCommentOptions) keeps owning that case.
+		commentContainer.addEventListener("contextmenu", (ev) => {
+			const target = ev.target as HTMLElement | null;
+			if (!target) return;
+			if (
+				target.closest(".comment-item-container") ||
+				target.closest(".mention-item") ||
+				target.closest(".mention-file-header") ||
+				target.closest("button") ||
+				target.closest("input") ||
+				target.closest("textarea")
+			) return;
+
+			ev.preventDefault();
+			this.showSidebarContextMenu(ev);
+		});
 
 		const activeFile = this.app.workspace.getActiveFile();
 		if (activeFile) await this.plugin.updateComments(activeFile);
