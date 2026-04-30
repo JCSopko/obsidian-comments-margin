@@ -20,7 +20,7 @@ export async function addCommentCommand(plugin: CommentsPlusPlus, file: TFile | 
                 name = result.text;
         }
 
-        const content = await promptForCommentContent(plugin.app);
+        const content = await promptForCommentContent(plugin.app, plugin.mentionRegistry);
         if (!content) return;
 
         const depth = isInsideComment ? ">>" : ">";

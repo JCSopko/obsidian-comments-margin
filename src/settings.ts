@@ -7,6 +7,7 @@ export interface CommentsPPSettings {
         expandSubCommentsInView: boolean;
         expandCommentsInEditor: boolean;
         alignmentInEditor: string;
+        minimalMode: boolean;
         // TODO: Add datetime format setting
 }
 
@@ -16,6 +17,7 @@ export const DEFAULT_SETTINGS: CommentsPPSettings = {
         expandSubCommentsInView: true,
         expandCommentsInEditor: false,
         alignmentInEditor: "left",
+        minimalMode: false,
 };
 
 export class CommentsPPSettingTab extends PluginSettingTab {
